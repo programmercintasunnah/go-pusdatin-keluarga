@@ -1,9 +1,9 @@
-CREATE TABLE IF NOT EXISTS weather_data (
+CREATE TABLE IF NOT EXISTS weather (
     id SERIAL PRIMARY KEY,
     city VARCHAR(100),
     temperature FLOAT,
     weather_desc TEXT,
-    collected_at TIMESTAMP DEFAULT NOW()
+    collected_at TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS chat_messages (

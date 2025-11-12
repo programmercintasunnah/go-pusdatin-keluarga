@@ -54,7 +54,7 @@ func IngestWeatherData(db *sql.DB) error {
 	if len(weather.Hourly.Temperature2m) > 0 {
 		temp := weather.Hourly.Temperature2m[len(weather.Hourly.Temperature2m)-1]
 		_, err := db.Exec(`
-			INSERT INTO weather_data (city, temperature, weather_desc, collected_at)
+			INSERT INTO weather (city, temperature, weather_desc, collected_at)
 			VALUES ($1, $2, $3, $4)
 		`, "Jakarta", temp, "Temperature (°C)", time.Now())
 		if err != nil {

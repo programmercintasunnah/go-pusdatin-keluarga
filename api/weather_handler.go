@@ -16,7 +16,7 @@ type WeatherData struct {
 func GetCurrentWeather(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		row := db.QueryRow(`SELECT city, temperature, weather_desc, collected_at 
-							FROM weather_data ORDER BY collected_at DESC LIMIT 1`)
+							FROM weather ORDER BY collected_at DESC LIMIT 1`)
 		var data WeatherData
 		row.Scan(&data.City, &data.Temperature, &data.WeatherDesc, &data.CollectedAt)
 		json.NewEncoder(w).Encode(data)
@@ -26,7 +26,7 @@ func GetCurrentWeather(db *sql.DB) http.HandlerFunc {
 func GetWeatherHistory(db *sql.DB) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		rows, _ := db.Query(`SELECT city, temperature, weather_desc, collected_at 
-							 FROM weather_data ORDER BY collected_at DESC LIMIT 10`)
+							 FROM weather ORDER BY collected_at DESC LIMIT 10`)
 		defer rows.Close()
 
 		var list []WeatherData

@@ -4,32 +4,36 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 
-	"test-backend/api"
-	"test-backend/config"
-	"test-backend/ingest"
+	"pu5d4t1n-k3lu4r64-simple/api"
+	"pu5d4t1n-k3lu4r64-simple/config"
+	"pu5d4t1n-k3lu4r64-simple/ingest"
 )
 
 func main() {
+	mode := ""
+	if len(os.Args) > 1 {
+		mode = os.Args[1]
+	}
+
 	db := config.ConnectDB()
 	defer db.Close()
 
-	// Weather endpoints
+	if mode == "--ingest" {
+		log.Println("🌦️ Running ingest mode...")
+		if err := ingest.IngestWeatherData(db); err != nil {
+			log.Println("❌ Gagal ingest:", err)
+		} else {
+			log.Println("✅ Ingest selesai.")
+		}
+		return
+	}
+
+	// Jalankan server API
 	http.HandleFunc("/api/weather/current", api.GetCurrentWeather(db))
 	http.HandleFunc("/api/weather/history", api.GetWeatherHistory(db))
-
-	// Chat endpoints (WebSocket)
 	http.HandleFunc("/ws", api.HandleConnections)
 	go api.HandleMessages()
-
-	// Scheduler for ingest every 15 min
-	go func() {
-		for {
-			_ = ingest.IngestWeatherData(db)
-			time.Sleep(15 * time.Minute)
-		}
-	}()
 
 	port := os.Getenv("PORT")
 	if port == "" {

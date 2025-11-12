@@ -1,23 +1,45 @@
-version: '3.8'
 services:
+  app:
+    build: .
+    container_name: test-backend-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=pusdatin_keluarga
+    restart: always
+
   db:
     image: postgres:16
-    restart: always
+    container_name: test-backend-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: test_backend
-    volumes:
-      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      POSTGRES_DB: pusdatin_keluarga
     ports:
-      - "5432:5432"
+      - "5433:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: always
 
-  app:
+  scheduler:
     build: .
+    container_name: test-backend-scheduler
     depends_on:
       - db
-    env_file:
-      - .env
-    ports:
-      - "8080:8080"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_NAME=pusdatin_keluarga
+    command: ["sh", "-c", "echo '*/15 * * * * /app/ingest.sh' > /etc/crontabs/root && crond -f -L /dev/stdout"]
     restart: always
+
+volumes:
+  db_data:
