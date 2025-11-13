@@ -29,10 +29,16 @@ func main() {
 		return
 	}
 
-	// Jalankan server API
+	// Weather API endpoints
 	http.HandleFunc("/api/weather/current", api.GetCurrentWeather(db))
 	http.HandleFunc("/api/weather/history", api.GetWeatherHistory(db))
-	http.HandleFunc("/ws", api.HandleConnections)
+
+	// Chat endpoints
+	http.HandleFunc("/ws", api.HandleConnections(db))
+	http.HandleFunc("/api/chat/history", api.GetChatHistory(db))
+	http.HandleFunc("/api/chat/users", api.GetActiveUsers)
+
+	// Start message handler goroutine
 	go api.HandleMessages()
 
 	port := os.Getenv("PORT")
@@ -41,5 +47,8 @@ func main() {
 	}
 
 	log.Println("🚀 Server running on port:", port)
+	log.Println("📡 WebSocket endpoint: ws://localhost:" + port + "/ws")
+	log.Println("🌐 Weather API: http://localhost:" + port + "/api/weather/current")
+	log.Println("💬 Chat History: http://localhost:" + port + "/api/chat/history")
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

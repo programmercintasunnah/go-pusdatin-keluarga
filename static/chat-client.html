@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Chat</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 800px;
+            height: 600px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 24px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4ade80;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .chat-area {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: #f8fafc;
+        }
+
+        .message {
+            margin-bottom: 16px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+        }
+
+        .username {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .message-type {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #667eea;
+        }
+
+        .message-type.private {
+            background: #fce7f3;
+            color: #be185d;
+        }
+
+        .message-type.group {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .message-text {
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            color: #334155;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .timestamp {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-left: 4px;
+        }
+
+        .input-area {
+            padding: 20px;
+            background: white;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+
+        input,
+        select {
+            padding: 10px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input:focus,
+        select:focus {
+            border-color: #667eea;
+        }
+
+        #username {
+            flex: 2;
+        }
+
+        #messageType,
+        #target {
+            flex: 1;
+        }
+
+        .message-input {
+            display: flex;
+            gap: 8px;
+        }
+
+        #message {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        #message:focus {
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>💬 WebSocket Chat</h1>
+            <div class="status">
+                <div class="status-dot"></div>
+                <span id="connectionStatus">Connected</span>
+            </div>
+        </div>
+
+        <div class="chat-area" id="messages"></div>
+
+        <div class="input-area">
+            <div class="controls">
+                <input type="text" id="username" placeholder="Your username..." />
+                <select id="messageType">
+                    <option value="broadcast">Broadcast</option>
+                    <option value="private">Private</option>
+                    <option value="group">Group</option>
+                </select>
+                <input type="text" id="target" placeholder="Target (user/group)..." style="display: none;" />
+            </div>
+
+            <div class="message-input">
+                <input type="text" id="message" placeholder="Type your message..." />
+                <button onclick="sendMessage()">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wsUrl = window.location.hostname === 'localhost'
+            ? 'ws://localhost:8080/ws'
+            : `ws://${window.location.hostname}:8080/ws`;
+        const ws = new WebSocket(wsUrl);
+        const messagesDiv = document.getElementById('messages');
+        const messageInput = document.getElementById('message');
+        const usernameInput = document.getElementById('username');
+        const typeSelect = document.getElementById('messageType');
+        const targetInput = document.getElementById('target');
+        const statusSpan = document.getElementById('connectionStatus');
+
+        ws.onopen = () => {
+            console.log('✅ Connected to WebSocket');
+            statusSpan.textContent = 'Connected';
+        };
+
+        ws.onclose = () => {
+            console.log('❌ Disconnected');
+            statusSpan.textContent = 'Disconnected';
+        };
+
+        ws.onmessage = (event) => {
+            const msg = JSON.parse(event.data);
+            displayMessage(msg);
+        };
+
+        typeSelect.addEventListener('change', (e) => {
+            if (e.target.value === 'broadcast') {
+                targetInput.style.display = 'none';
+            } else {
+                targetInput.style.display = 'block';
+            }
+        });
+
+        function displayMessage(msg) {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = 'message';
+
+            const time = msg.sent_at ? new Date(msg.sent_at).toLocaleTimeString() : new Date().toLocaleTimeString();
+
+            msgDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="username">${msg.username}</span>
+                    <span class="message-type ${msg.type}">${msg.type}</span>
+                    <span class="timestamp">${time}</span>
+                </div>
+                <div class="message-text">${msg.message}</div>
+            `;
+
+            messagesDiv.appendChild(msgDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function sendMessage() {
+            const username = usernameInput.value.trim();
+            const message = messageInput.value.trim();
+            const type = typeSelect.value;
+            const target = targetInput.value.trim();
+
+            if (!username) {
+                alert('Please enter your username!');
+                return;
+            }
+
+            if (!message) {
+                alert('Please enter a message!');
+                return;
+            }
+
+            if ((type === 'private' || type === 'group') && !target) {
+                alert('Please enter a target for ' + type + ' message!');
+                return;
+            }
+
+            const msg = {
+                username: username,
+                message: message,
+                type: type,
+                target: target
+            };
+
+            ws.send(JSON.stringify(msg));
+            messageInput.value = '';
+        }
+
+        messageInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Join group example
+        function joinGroup(groupName) {
+            const username = usernameInput.value.trim();
+            if (!username) {
+                alert('Set username first!');
+                return;
+            }
+
+            ws.send(JSON.stringify({
+                username: username,
+                type: 'join_group',
+                target: groupName
+            }));
+
+            console.log(`Joined group: ${groupName}`);
+        }
+
+        // Auto-join "general" group on load
+        setTimeout(() => {
+            if (usernameInput.value) {
+                joinGroup('general');
+            }
+        }, 1000);
+    </script>
+</body>
+
+</html>

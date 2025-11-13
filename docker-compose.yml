@@ -40,6 +40,15 @@ services:
       - DB_NAME=pusdatin_keluarga
     command: ["sh", "-c", "echo '*/15 * * * * /app/ingest.sh' > /etc/crontabs/root && crond -f -L /dev/stdout"]
     restart: always
+   # Nginx untuk serve HTML static
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "3003:80"
+    volumes:
+      - ./static:/usr/share/nginx/html
+    depends_on:
+      - app
 
 volumes:
   db_data:
