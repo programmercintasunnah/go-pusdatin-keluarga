@@ -30,7 +30,5 @@ docker-compose up --build
 Lalu buka:
 
 🌤 http://localhost:8080/api/weather/current
-
 📜 http://localhost:8080/api/weather/history
-
 💬 WebSocket Chat: ws://localhost:8080/ws
